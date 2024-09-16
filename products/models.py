@@ -1,6 +1,8 @@
 from django.db import models
 
+import products.models
 from users.models import User
+
 
 class ProductCategory(models.Model):
     name = models.CharField(max_length=128)
@@ -22,11 +24,26 @@ class Product(models.Model):
         return f'{self.name} -> Категория: {self.category.name}'
 
 
+class BasketQuerySet(models.QuerySet):
+    def total_sum(self):
+        return sum(b.sum() for b in self)
+
+    def total_quantity(self):
+        return sum(b.quantity for b in self)
+
+
 class Basket(models.Model):
     user = models.ForeignKey(to=User, on_delete=models.CASCADE)
     product = models.ForeignKey(to=Product, on_delete=models.CASCADE)
     quantity = models.PositiveSmallIntegerField(default=0)
     created_timestamp = models.DateTimeField(auto_now_add=True)
 
+    objects = BasketQuerySet.as_manager()
+
     def __str__(self):
         return f'User={self.user.name} -> Product={self.product.name}'
+
+    def sum(self):
+        return self.product.price * self.quantity
+
+
